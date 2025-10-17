@@ -1,4 +1,4 @@
-name: Combined Pipeline
+name: CI/CD Pipeline
 on:
   push:
     branches:
@@ -76,7 +76,7 @@ jobs:
       - name: Build and push Docker image
         run: |
           REPO_NAME=${GITHUB_REPOSITORY##*/}
-          docker build -t $REPO_NAME .
+          docker build -t $REPO_NAME:latest .
           docker tag $REPO_NAME:latest $REPO_URI/$REPO_NAME:latest
           docker tag $REPO_NAME:latest $REPO_URI/$REPO_NAME:${GITHUB_SHA:0:7}
           docker push $REPO_URI/$REPO_NAME:latest
