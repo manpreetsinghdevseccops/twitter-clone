@@ -1,4 +1,4 @@
-name: Combined Pipeline
+name: CI/CD Pipeline
 on:
   push:
     branches:
@@ -9,12 +9,12 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-      - name: Setup Java
+      - name: Set up Java
         uses: actions/setup-java@v3
         with:
           java-version: '17'
           distribution: 'temurin'
-      - name: Setup Node.js
+      - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '16'
@@ -43,7 +43,7 @@ jobs:
       - name: Setup Node.js environment
         uses: actions/setup-node@v3
         with:
-          node-version: '16'
+          node-version: 16
       - name: Install dependencies
         run: npm install
       - name: Unit Testing
@@ -76,11 +76,11 @@ jobs:
       - name: Build and push Docker image
         run: |
           REPO_NAME=${GITHUB_REPOSITORY##*/}
-          docker build -t $REPO_NAME .
-          docker tag $REPO_NAME:latest $REPO_URI/$REPO_NAME:latest
-          docker tag $REPO_NAME:latest $REPO_URI/$REPO_NAME:${GITHUB_SHA:0:7}
-          docker push $REPO_URI/$REPO_NAME:latest
-          docker push $REPO_URI/$REPO_NAME:${GITHUB_SHA:0:7}
+          docker build -t $REPO_NAME:latest .
+          docker tag $REPO_NAME:latest ${REPO_URI}/$REPO_NAME:latest
+          docker tag $REPO_NAME:latest ${REPO_URI}/$REPO_NAME:${GITHUB_SHA::7}
+          docker push ${REPO_URI}/$REPO_NAME:latest
+          docker push ${REPO_URI}/$REPO_NAME:${GITHUB_SHA::7}
       - name: Verify deployment
         run: |
           docker images
