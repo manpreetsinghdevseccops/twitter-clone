@@ -70,7 +70,7 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
   build:
-    needs: [unit-testing, sonarqube-scan]
+    needs: [sonarqube-scan, unit-testing]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
