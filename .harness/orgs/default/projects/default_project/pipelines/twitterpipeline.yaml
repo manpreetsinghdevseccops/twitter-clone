@@ -21,6 +21,7 @@ pipeline:
           caching:
             enabled: true
             override: true
+            paths: []
           buildIntelligence:
             enabled: true
           infrastructure:
@@ -46,3 +47,5 @@ pipeline:
                       - h-twitter-tag
                     dockerfile: Dockerfile
                     context: .
+        tags:
+          htag: ""
