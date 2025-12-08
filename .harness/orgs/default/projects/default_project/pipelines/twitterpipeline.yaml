@@ -39,3 +39,4 @@ pipeline:
                     imageName: harness-twitter
                     tags:
                       - h-twitter-tag
+                    dockerfile: ./Dockerfile
