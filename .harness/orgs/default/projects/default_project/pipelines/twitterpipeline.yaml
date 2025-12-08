@@ -41,7 +41,7 @@ pipeline:
                     connectorRef: aws
                     region: ap-south-1
                     account: "130705418859"
-                    imageName: twitter-image
+                    imageName: twitter-clone
                     tags:
                       - h-twitter-tag
                     dockerfile: Dockerfile
