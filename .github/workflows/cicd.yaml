@@ -37,7 +37,7 @@ jobs:
         format: HTML
         outDir: reports
         
-    - name: Upload Dependency-Check report
+    - name: Upload Dependency-Check Report
       uses: actions/upload-artifact@v4
       with:
         name: dependency-check-report
