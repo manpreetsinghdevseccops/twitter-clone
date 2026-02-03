@@ -1,121 +1,32 @@
-name: CI/CD Pipeline
-
+name: OWASP Dependency-Check
 on:
   push:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    env:
-      AWS_REGION: ap-south-1
-      REPOSITORY_NAME: twitter-clone
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v5
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ap-south-1
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
-      - name: Create ECR repository
-        run: |
-          if ! aws ecr describe-repositories --repository-names $REPOSITORY_NAME --region $AWS_REGION >/dev/null 2>&1; then
-            aws ecr create-repository --repository-name $REPOSITORY_NAME --region $AWS_REGION
-            echo "Repository $REPOSITORY_NAME created in region $AWS_REGION"
-          else
-            echo "Repository $REPOSITORY_NAME already exists"
-          fi
-      - name: Build, tag, and push docker image to Amazon ECR
-        env:
-          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          REPOSITORY: ${{ github.event.repository.name }}   
-          IMAGE_TAG: ${{ github.ref_name }}
-          IMAGE_VERSION: ${{ github.run_number }}
-        run: |
-          echo "Building Docker image..."
-          docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG-$IMAGE_VERSION .
-          echo "Pushing Docker images..."
-          docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG-$IMAGE_VERSION
-      - name: Verify deployment
-        run: |
-          echo "Deployment successful"
-          docker images
-
   owasp-dependency-check:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
-    - name: Set up Java
-      uses: actions/setup-java@v3
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '16.20.2'
-        cache: 'npm'
-    - name: Install dependencies
-      run: npm ci --legacy-peer-deps
-    - name: Run OWASP Dependency-Check
-      uses: dependency-check/Dependency-Check_Action@main
-      env:
-        JAVA_HOME: /opt/jdk
-      with:
-        project: myorg-nodejs-project
-        scanPath: .
-        format: HTML
-        outDir: reports
-    - name: Upload Dependency Check Report
-      uses: actions/upload-artifact@v4
-      with:
-        name: dependency-check-report
-        path: reports/dependency-check-report.html
-
-  deploy:
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Set Environment variables
-        id: prep
-        env:
-          GIT_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: |
-          echo ::set-output name=ECR_REGISTRY::${{ steps.login-ecr.outputs.registry }}
-          echo ::set-output name=ECR_REPOSITORY::${{ github.event.repository.name }}
-          echo ::set-output name=IMAGE_TAG::${{ github.ref_name }}
-          echo ::set-output name=IMAGE_VERSION::${{ github.run_number }}
-          echo ::set-output name=CLUSTER::${{ env.EKS_CLUSTER }}
-          echo ::set-output name=GIT_TOKEN::${{ env.GIT_TOKEN }}
-      - name: Adding service configs repo
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v4
+      
+      - name: Set up Java (OWASP Dependency)
+        uses: actions/setup-java@v4
         with:
-          repository: "devseccops/manpreet-service-configs"
-          token: "${{ secrets.GH_TOKEN }}"
-          path: manpreet-service-configs
-          ref: "dev"
-      - name: deploy to prod EKS cluster
+          java-version: '21'
+          distribution: 'temurin'
+      
+      - name: Run OWASP Dependency-Check
+        uses: dependency-check/Dependency-Check_Action@main
         env:
-          ECR_REGISTRY: ${{ steps.prep.outputs.ECR_REGISTRY }}
-          ECR_REPOSITORY: ${{ steps.prep.outputs.ECR_REPOSITORY }}
-          IMAGE_TAG: ${{ steps.prep.outputs.IMAGE_TAG }}
-          IMAGE_VERSION: ${{ steps.prep.outputs.IMAGE_VERSION }}
-          CLUSTER: ${{ steps.prep.outputs.CLUSTER }}
-          GIT_TOKEN: ${{ steps.prep.outputs.GIT_TOKEN }}
-        run: |
-          cd manpreet-service-configs
-          sudo wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq && sudo chmod +x /usr/bin/yq
-          yq --version
-          IMAGE=$IMAGE_TAG-$IMAGE_VERSION yq -i '.image.tag=strenv(IMAGE)' ${{ steps.prep.outputs.ECR_REPOSITORY }}/values.yaml
-          cat ${{ steps.prep.outputs.ECR_REPOSITORY }}/values.yaml
-      - uses: stefanzweifel/git-auto-commit-action@v4
+          JAVA_HOME: /opt/jdk
         with:
-          commit_message: "Updating devseccops values.yaml with image tag: ${{ steps.prep.outputs.IMAGE_TAG }}-${{ steps.prep.outputs.IMAGE_VERSION }}"
-          branch: dev
-          repository: ./manpreet-service-configs
+          project: myorg-project
+          scanPath: .
+          format: HTML
+          outDir: reports
+      
+      - name: Upload Dependency-Check Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-check-report
+          path: reports/dependency-check-report.html
